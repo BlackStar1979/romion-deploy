@@ -1,0 +1,25 @@
+services:
+  romion-deploy:
+    build: .
+    image: romion-deploy:latest
+    container_name: romion-deploy
+    restart: unless-stopped
+    env_file:
+      - .env                      # DEPLOY_AUTH_TOKEN (never baked into the image)
+    volumes:
+      # Reviewed exception: the channel's whole job is bounded docker control.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Managed stacks' compose files; same path host<->container so the daemon
+      # and the in-container CLI agree on paths.
+      - /home/deploy/apps:/home/deploy/apps
+      # Stack allowlist, editable on the host without rebuilding the image.
+      - ./app/stacks.json:/srv/romion-deploy/app/stacks.json:ro
+    expose:
+      - "8091"                    # internal only; cloudflared reaches it by name
+    networks:
+      - llm_edge
+
+networks:
+  llm_edge:
+    external: true
+    name: romion_llm_llm_edge     # same network as romion-llm-cloudflared

@@ -1,0 +1,30 @@
+# romion-deploy systemd unit (host service, runs as the deploy user).
+# Install: /etc/systemd/system/romion-deploy.service
+# The deploy user is in the docker group, so compose works without mounting
+# the docker socket into a container.
+#
+# Secrets (DEPLOY_AUTH_TOKEN) come from the EnvironmentFile, not this unit, so
+# the token never lands in the unit text or `systemctl cat` for non-root.
+
+[Unit]
+Description=ROMION bounded deploy channel
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=deploy
+Group=deploy
+WorkingDirectory=/home/deploy/romion-deploy
+EnvironmentFile=/home/deploy/romion-deploy/.env
+ExecStart=/home/deploy/romion-deploy/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8091
+Restart=on-failure
+RestartSec=3
+# Light hardening only. Deeper systemd sandboxing is deferred: the deploy user
+# is in the docker group (≈ root via the daemon), so it dominates the risk and
+# must be addressed separately (rootless docker / sudo-allowlist), not here.
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
