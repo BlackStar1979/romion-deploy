@@ -12,6 +12,10 @@ services:
       # Managed stacks' compose files; same path host<->container so the daemon
       # and the in-container CLI agree on paths.
       - /home/deploy/apps:/home/deploy/apps
+      # Managed stacks' secrets (env_file / mounted configs). Read-only; the
+      # in-container compose CLI resolves env_file paths against this, and the
+      # daemon mounts them into the target containers (same host<->container path).
+      - /home/deploy/secrets:/home/deploy/secrets:ro
       # Stack allowlist, editable on the host without rebuilding the image.
       - ./app/stacks.json:/srv/romion-deploy/app/stacks.json:ro
     expose:
